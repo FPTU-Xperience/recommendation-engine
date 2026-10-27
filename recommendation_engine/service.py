@@ -85,7 +85,7 @@ class MongoStore:
             if old and observed < old["observedAt"]:
                 return "IGNORED_OLDER_FEED"
             refresh = not old or old.get("fingerprint") != digest or old.get("needsFeed", False)
-            refresh = refresh or old.get("resultExpiresAt", now) <= now + timedelta(minutes=5)
+            refresh = refresh or bool(old and old.get("result") and old.get("resultExpiresAt", now) <= now + timedelta(minutes=5))
             if not refresh:
                 self.jobs.update_one({**identity, "generation": old["generation"]}, {"$set": {
                     "deleteAfter": now + timedelta(days=30), "lastFeedAt": now}})
@@ -96,7 +96,8 @@ class MongoStore:
             if old:
                 # A concurrent invalidation also advances generation and cannot be lost.
                 changed = self.jobs.update_one({**identity, "generation": old["generation"]},
-                                              {"$set": fields, "$inc": {"generation": 1}})
+                                              {"$set": fields, "$inc": {"generation": 1},
+                                               "$unset": {"leaseUntil": "", "leaseToken": ""}})
                 if changed.modified_count:
                     return "QUEUED"
             else:
