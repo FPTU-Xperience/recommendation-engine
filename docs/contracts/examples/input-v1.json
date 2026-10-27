@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "snapshotId": "synthetic-20261027-01",
+  "asOf": "2026-10-27T00:00:00Z",
+  "expiresAt": "2026-10-28T00:00:00Z",
+  "semesterId": "FALL2026",
+  "policyVersion": "synthetic-policy-1",
+  "students": [{
+    "userId": 42,
+    "campusCode": "HAN",
+    "preferences": {"version":"synthetic-pref-1","interestIds":["technology"],"customInterests":[],"declaredMajorCode":"SOFTWARE_ENGINEERING"},
+    "schedule": {"version":"synthetic-schedule-1","availability":"KNOWN","busyIntervals":[{"start":"2026-10-27T00:00:00Z","end":"2026-10-27T02:15:00Z"}]},
+    "experience": {"semesterId":"FALL2026","policyVersion":"synthetic-policy-1","ledgerRevision":3,"isAuthoritative":true,"pillars":[{"pillar":"Academic","score":20},{"pillar":"Research","score":10},{"pillar":"Global","score":30},{"pillar":"CultureSports","score":40},{"pillar":"Community","score":50},{"pillar":"Entrepreneurship","score":60}]},
+    "memberships": [],
+    "activityRegistrations": [],
+    "walletSignals": {},
+    "sourceVersions": {"account":{"version":"synthetic-account-1","asOf":"2026-10-27T00:00:00Z"},"catalog":{"version":"synthetic-catalog-1","asOf":"2026-10-27T00:00:00Z"},"preferences":{"version":"synthetic-pref-1","asOf":"2026-10-27T00:00:00Z"},"schedule":{"version":"synthetic-schedule-1","asOf":"2026-10-27T00:00:00Z"},"experience":{"policyVersion":"synthetic-policy-1","ledgerRevision":3,"asOf":"2026-10-27T00:00:00Z"}}
+  }],
+  "clubs": [{"id":7,"version":"synthetic-club-1","campusCode":"HAN","active":true,"recruiting":true,"interestIds":["technology"],"majorCodes":["SOFTWARE_ENGINEERING"],"pillarWeights":{"Research":1},"meetingIntervals":[{"start":"2026-10-27T08:00:00Z","end":"2026-10-27T09:00:00Z"}],"scheduleAvailability":"KNOWN"}],
+  "activities": [{"id":91,"version":"synthetic-activity-1","clubId":7,"campusCode":"HAN","published":true,"cancelled":false,"registrationOpen":true,"registrationDeadline":"2026-10-27T07:00:00Z","capacityAvailable":true,"eligibleUserIds":[42],"interestIds":["technology"],"majorCodes":["SOFTWARE_ENGINEERING"],"pillarWeights":{"Research":1},"sessions":[{"id":901,"start":"2026-10-27T08:00:00Z","end":"2026-10-27T09:00:00Z","required":true}],"scheduleAvailability":"KNOWN"}]
+}
