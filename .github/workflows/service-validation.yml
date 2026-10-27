@@ -1,0 +1,45 @@
+name: Recommendation service validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:8.0
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd 'mongosh --quiet --eval "db.adminCommand({ping:1})"'
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements-service.txt
+      - name: Engine, HTTP and real Mongo acceptance tests
+        env:
+          MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+        run: python -m unittest discover -s tests -v
+      - name: Build service image
+        run: docker build -t recommendation:ci .
+      - name: Verify deployment and private compose
+        env:
+          RECOMMENDATION_TOKEN: synthetic-ci-token-0000000000000000
+          MONGODB_PASSWORD: synthetic-ci-mongo-0000000000000000
+        run: |
+          bash -n ops/deploy.sh
+          docker compose config --quiet
+          docker compose config --format json | python -c 'import json,sys; d=json.load(sys.stdin); assert all(not s.get("ports") for s in d["services"].values())'

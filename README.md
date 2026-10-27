@@ -2,14 +2,16 @@
 
 Python service/job for suggesting FPTU-Xperience clubs and activities.
 
-V1 is a deterministic, content-based ranker using ordinary Python collections and the standard library. The Python engine and JSON CLI are implemented; backend exports, live API delivery and deployment remain integration work. No Spark, model training or runtime dependency installation is required.
+V1 is a deterministic, content-based ranker using ordinary Python collections and the standard library. The CLI remains dependency-free. The private HTTP API and durable worker use MongoDB through the optional `requirements-service.txt` dependencies. ClubHub exports authoritative feeds and serves processed results through its authenticated .NET API. No Spark or model training is required.
 
 - [V1 integration and ranking contract](docs/contracts/recommendation-v1.md)
 - [Example input](docs/contracts/examples/input-v1.json)
 - [Example output](docs/contracts/examples/output-v1.json)
 - [Default configuration](config/default.json)
 
-Start with backend-exported JSON snapshots and a Python batch job. Backend serves the resulting recommendations after rechecking live availability. The input/output boundary can later be reused by an HTTP worker or a Spark pipeline without changing frontend business rules.
+Backend snapshots feed the durable worker; it evaluates candidates and atomically publishes versioned results in MongoDB. Reads only load processed results. The backend rechecks live availability and hydrates current activity/club DTOs. The same ranking boundary can later be reused by a training or Spark pipeline.
+
+- [Service, provisioning and deployment runbook](docs/service-deployment.md)
 
 ## Run
 

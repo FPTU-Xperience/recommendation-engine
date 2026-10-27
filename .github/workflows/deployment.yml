@@ -1,0 +1,53 @@
+name: Deploy recommendation to API VPC
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recommendation-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    uses: ./.github/workflows/service-validation.yml
+  deploy:
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Copy immutable release
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPC_HOST }}
+          username: ${{ secrets.VPC_USERNAME }}
+          key: ${{ secrets.VPC_SSH_KEY }}
+          passphrase: ${{ secrets.VPC_SSH_PASSPHRASE }}
+          source: Dockerfile,requirements-service.txt,recommendation_engine,docker-compose.yml,ops
+          target: /${{ secrets.VPC_USERNAME }}/fptux/recommendation/releases/${{ github.sha }}
+          rm: false
+      - name: Provision, deploy and check health
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RECOMMENDATION_TOKEN: ${{ secrets.RECOMMENDATION_TOKEN }}
+          MONGODB_PASSWORD: ${{ secrets.RECOMMENDATION_MONGODB_PASSWORD }}
+          API_NETWORK: ${{ vars.API_COMPOSE_NETWORK }}
+          DEPLOY_ROOT: /${{ secrets.VPC_USERNAME }}/fptux/recommendation
+        with:
+          host: ${{ secrets.VPC_HOST }}
+          username: ${{ secrets.VPC_USERNAME }}
+          key: ${{ secrets.VPC_SSH_KEY }}
+          passphrase: ${{ secrets.VPC_SSH_PASSPHRASE }}
+          command_timeout: 20m
+          envs: RELEASE_SHA,RECOMMENDATION_TOKEN,MONGODB_PASSWORD,API_NETWORK,DEPLOY_ROOT
+          script: |
+            set -eu
+            bash "${DEPLOY_ROOT}/releases/${RELEASE_SHA}/ops/deploy.sh"

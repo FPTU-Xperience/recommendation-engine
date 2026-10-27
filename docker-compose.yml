@@ -1,0 +1,54 @@
+services:
+  recommendation-mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: recommendation
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?MONGODB_PASSWORD is required}
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25", "--bind_ip_all"]
+    volumes:
+      - recommendation_mongo:/data/db
+    networks: [data]
+    mem_limit: 640m
+    cpus: 0.5
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ping:1})' --username recommendation --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin >/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  recommendation-service:
+    image: ${RECOMMENDATION_IMAGE:-fptux-recommendation:local}
+    build: .
+    restart: unless-stopped
+    depends_on:
+      recommendation-mongo:
+        condition: service_healthy
+    environment:
+      MONGODB_URI: mongodb://recommendation:${MONGODB_PASSWORD:?MONGODB_PASSWORD is required}@recommendation-mongo:27017/?authSource=admin
+      MONGODB_DATABASE: recommendation
+      RECOMMENDATION_TOKEN: ${RECOMMENDATION_TOKEN:?RECOMMENDATION_TOKEN is required}
+    networks:
+      data:
+      api:
+        aliases: [recommendation-service]
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 96
+    read_only: true
+    tmpfs: [/tmp:size=16m,noexec,nosuid]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+
+volumes:
+  recommendation_mongo:
+    name: fptux-recommendation-mongo
+
+networks:
+  data:
+    internal: true
+  api:
+    external: true
+    name: ${API_NETWORK:-fptux-clubhub-api_internal-net}
