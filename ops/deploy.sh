@@ -34,6 +34,7 @@ trap rollback ERR
 docker compose -p fptux-recommendation up -d --no-build --wait --wait-timeout 150 recommendation-service
 docker compose -p fptux-recommendation exec -T recommendation-service python -c \
   "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=5)"
+docker compose -p fptux-recommendation exec -T recommendation-service python ops/smoke.py
 ln -sfn "$release" "${DEPLOY_ROOT}/current"
 trap - ERR
 echo 'Recommendation release healthy. No public ports added; API stack was not restarted.'

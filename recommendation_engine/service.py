@@ -28,6 +28,11 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
+def micros(instant):
+    delta = instant - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return (delta.days * 86400 + delta.seconds) * 1000000 + delta.microseconds
+
+
 def fingerprint(snapshot):
     value = deepcopy(snapshot)
     for name in ("snapshotId", "asOf", "expiresAt"):
@@ -80,9 +85,10 @@ class MongoStore:
             raise ValidationError("INVALID_FEED", "Read start must precede snapshot publication.")
         for _ in range(10):
             old = self.jobs.find_one(identity)
-            if old and old.get("invalidatedAt", started) > started:
+            if old and old.get("invalidatedAtMicros", micros(started)) > micros(started):
                 return "RETRY_SOURCE_CHANGED"
-            if old and observed < old["observedAt"]:
+            # BSON dates truncate to milliseconds; preserve ordering separately.
+            if old and micros(observed) < old.get("observedAtMicros", micros(timestamp(old["feed"]["asOf"], "asOf"))):
                 return "IGNORED_OLDER_FEED"
             refresh = not old or old.get("fingerprint") != digest or old.get("needsFeed", False)
             refresh = refresh or bool(old and old.get("result") and old.get("resultExpiresAt", now) <= now + timedelta(minutes=5))
@@ -90,7 +96,7 @@ class MongoStore:
                 self.jobs.update_one({**identity, "generation": old["generation"]}, {"$set": {
                     "deleteAfter": now + timedelta(days=30), "lastFeedAt": now}})
                 return "UNCHANGED"
-            fields = {"feed": snapshot, "fingerprint": digest, "observedAt": observed,
+            fields = {"feed": snapshot, "fingerprint": digest, "observedAt": observed, "observedAtMicros": micros(observed),
                       "lastFeedAt": now, "deleteAfter": now + timedelta(days=30),
                       "dirty": True, "needsFeed": False, "dueAt": now + timedelta(seconds=2)}
             if old:
@@ -110,7 +116,7 @@ class MongoStore:
 
     def invalidate(self, user_ids=None):
         query = {} if user_ids is None else {"userId": {"$in": user_ids}}
-        self.jobs.update_many(query, {"$set": {"dirty": True, "needsFeed": True, "invalidatedAt": utcnow()},
+        self.jobs.update_many(query, {"$set": {"dirty": True, "needsFeed": True, "invalidatedAtMicros": micros(utcnow())},
                                       "$inc": {"generation": 1}})
 
     def claim(self):
