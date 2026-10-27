@@ -1,0 +1,18 @@
+{
+  "configVersion": "initial-defaults-1",
+  "clubLimit": 6,
+  "activityLimit": 6,
+  "weights": {
+    "interest": 0.4,
+    "major": 0.15,
+    "pillar": 0.25,
+    "schedule": 0.15,
+    "walletAffinity": 0.05
+  },
+  "weakestBoost": 2.0,
+  "strongestBoost": 1.5,
+  "otherBoost": 1.0,
+  "tieTolerance": 1.0,
+  "walletAffinityCap": 1000,
+  "maxSourceAgeHours": 24
+}

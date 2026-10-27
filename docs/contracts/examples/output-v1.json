@@ -5,13 +5,144 @@
   "configVersion": "initial-defaults-1",
   "generatedFromAsOf": "2026-10-27T00:00:00Z",
   "expiresAt": "2026-10-28T00:00:00Z",
-  "results": [{
-    "userId": 42,
-    "semesterId": "FALL2026",
-    "status": "PARTIAL",
-    "warnings": ["WALLET_SIGNAL_UNAVAILABLE"],
-    "sourceVersions": {"account":{"version":"synthetic-account-1","asOf":"2026-10-27T00:00:00Z"},"catalog":{"version":"synthetic-catalog-1","asOf":"2026-10-27T00:00:00Z"},"preferences":{"version":"synthetic-pref-1","asOf":"2026-10-27T00:00:00Z"},"schedule":{"version":"synthetic-schedule-1","asOf":"2026-10-27T00:00:00Z"},"experience":{"policyVersion":"synthetic-policy-1","ledgerRevision":3,"asOf":"2026-10-27T00:00:00Z"}},
-    "clubs": [{"id":7,"rank":1,"score":1.0,"availableWeight":0.95,"candidateVersion":"synthetic-club-1","targetPillar":"Research","features":{"interest":{"value":1.0,"available":true},"major":{"value":1.0,"available":true},"pillar":{"value":1.0,"available":true},"schedule":{"value":1.0,"available":true},"walletAffinity":{"value":null,"available":false}},"reasons":[{"code":"INTEREST_MATCH","interestIds":["technology"]},{"code":"MAJOR_MATCH","majorCode":"SOFTWARE_ENGINEERING"},{"code":"GROW_WEAKEST_PILLAR","pillar":"Research"},{"code":"NO_SCHEDULE_CONFLICT"}],"scheduleStatus":"KNOWN_NO_CONFLICT","suggestedSessionIds":[]}],
-    "activities": [{"id":91,"rank":1,"score":1.0,"availableWeight":0.95,"candidateVersion":"synthetic-activity-1","targetPillar":"Research","features":{"interest":{"value":1.0,"available":true},"major":{"value":1.0,"available":true},"pillar":{"value":1.0,"available":true},"schedule":{"value":1.0,"available":true},"walletAffinity":{"value":null,"available":false}},"reasons":[{"code":"INTEREST_MATCH","interestIds":["technology"]},{"code":"MAJOR_MATCH","majorCode":"SOFTWARE_ENGINEERING"},{"code":"GROW_WEAKEST_PILLAR","pillar":"Research"},{"code":"NO_SCHEDULE_CONFLICT"}],"scheduleStatus":"KNOWN_NO_CONFLICT","suggestedSessionIds":[]}]
-  }]
+  "results": [
+    {
+      "userId": 42,
+      "semesterId": "FALL2026",
+      "clubs": [
+        {
+          "id": 7,
+          "score": 1.0,
+          "availableWeight": 0.95,
+          "candidateVersion": "synthetic-club-1",
+          "targetPillar": "Research",
+          "features": {
+            "interest": {
+              "value": 1.0,
+              "available": true
+            },
+            "major": {
+              "value": 1.0,
+              "available": true
+            },
+            "pillar": {
+              "value": 1.0,
+              "available": true
+            },
+            "schedule": {
+              "value": 1.0,
+              "available": true
+            },
+            "walletAffinity": {
+              "value": null,
+              "available": false
+            }
+          },
+          "reasons": [
+            {
+              "code": "INTEREST_MATCH",
+              "interestIds": [
+                "technology"
+              ]
+            },
+            {
+              "code": "MAJOR_MATCH",
+              "majorCode": "SOFTWARE_ENGINEERING"
+            },
+            {
+              "code": "GROW_WEAKEST_PILLAR",
+              "pillar": "Research"
+            },
+            {
+              "code": "NO_SCHEDULE_CONFLICT"
+            }
+          ],
+          "scheduleStatus": "KNOWN_NO_CONFLICT",
+          "suggestedSessionIds": [],
+          "rank": 1
+        }
+      ],
+      "activities": [
+        {
+          "id": 91,
+          "score": 1.0,
+          "availableWeight": 0.95,
+          "candidateVersion": "synthetic-activity-1",
+          "targetPillar": "Research",
+          "features": {
+            "interest": {
+              "value": 1.0,
+              "available": true
+            },
+            "major": {
+              "value": 1.0,
+              "available": true
+            },
+            "pillar": {
+              "value": 1.0,
+              "available": true
+            },
+            "schedule": {
+              "value": 1.0,
+              "available": true
+            },
+            "walletAffinity": {
+              "value": null,
+              "available": false
+            }
+          },
+          "reasons": [
+            {
+              "code": "INTEREST_MATCH",
+              "interestIds": [
+                "technology"
+              ]
+            },
+            {
+              "code": "MAJOR_MATCH",
+              "majorCode": "SOFTWARE_ENGINEERING"
+            },
+            {
+              "code": "GROW_WEAKEST_PILLAR",
+              "pillar": "Research"
+            },
+            {
+              "code": "NO_SCHEDULE_CONFLICT"
+            }
+          ],
+          "scheduleStatus": "KNOWN_NO_CONFLICT",
+          "suggestedSessionIds": [],
+          "rank": 1
+        }
+      ],
+      "status": "PARTIAL",
+      "warnings": [
+        "PARTIAL_FEATURES",
+        "WALLET_SIGNAL_UNAVAILABLE"
+      ],
+      "sourceVersions": {
+        "account": {
+          "version": "synthetic-account-1",
+          "asOf": "2026-10-27T00:00:00Z"
+        },
+        "catalog": {
+          "version": "synthetic-catalog-1",
+          "asOf": "2026-10-27T00:00:00Z"
+        },
+        "preferences": {
+          "version": "synthetic-pref-1",
+          "asOf": "2026-10-27T00:00:00Z"
+        },
+        "schedule": {
+          "version": "synthetic-schedule-1",
+          "asOf": "2026-10-27T00:00:00Z"
+        },
+        "experience": {
+          "policyVersion": "synthetic-policy-1",
+          "ledgerRevision": 3,
+          "asOf": "2026-10-27T00:00:00Z"
+        }
+      }
+    }
+  ]
 }
