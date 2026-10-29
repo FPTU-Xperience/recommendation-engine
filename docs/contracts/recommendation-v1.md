@@ -48,7 +48,7 @@ Availability is `KNOWN|UNKNOWN`; empty KNOWN busyIntervals means the student exp
 
 Club suggestions: active and recruiting, same campus, student not already an approved member. This list means suggestions to join a club, not shortcuts to existing memberships. No membership requirement is inferred from the student's major.
 
-Activity suggestions: published, not cancelled, future opportunity, registration open before deadline, capacity available, same campus and student included in backend eligibility; exclude already registered activities. This keeps v1 strictly campus-scoped; cross-campus/online exceptions require a later explicit eligibility contract.
+Activity suggestions: published, not cancelled, future opportunity, registration open before deadline, capacity available and student included in backend eligibility; exclude already registered activities. `isInternal:false` activities require the same campus. `isInternal:true` activities require current club membership and may belong to another campus. Missing `isInternal` defaults to false for older version 1.0 public-catalog snapshots; exporters must now provide the entity flag explicitly. Backend live authorization remains mandatory.
 
 With KNOWN student and activity schedules, exclude mandatory overlaps and optional-only activities with no attendable option. Intervals overlap iff `max(startA,startB) < min(endA,endB)`; back-to-back sessions are allowed with zero travel buffer in v1. A future configurable travel buffer may tighten this.
 
@@ -56,7 +56,7 @@ Club recurring schedule conflict is a soft compatibility score, not automatic ex
 
 ## 4. Deterministic scoring
 
-These coefficients are initial engineering defaults, not empirically validated model weights. All are config values under `ruleVersion:SIMPLE_CONTENT_V1`; changing weights creates a new configVersion.
+These coefficients are initial engineering defaults, not empirically validated model weights. Audience filtering is versioned under `ruleVersion:SIMPLE_CONTENT_V2`; changing weights creates a new configVersion.
 
 | Component | Weight | Normalized feature |
 | --- | --- | --- |

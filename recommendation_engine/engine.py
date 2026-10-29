@@ -10,7 +10,7 @@ from .validation import (CAMPUSES, PILLARS, ValidationError, array, availability
                          boolean, candidate, ids, intervals, number, object_value,
                          positive_int, require, source_metadata, tags, text, timestamp)
 
-RULE_VERSION = "SIMPLE_CONTENT_V1"
+RULE_VERSION = "SIMPLE_CONTENT_V2"
 
 
 def overlaps(left, right):
@@ -159,7 +159,10 @@ def _schedule(student, row, kind, as_of):
 
 
 def _score(student, row, kind, config, as_of):
-    if row["campusCode"] != student["campusCode"]:
+    internal = kind == "activity" and row["isInternal"]
+    if internal and row["clubId"] not in student["_memberships"]:
+        return None
+    if not internal and row["campusCode"] != student["campusCode"]:
         return None
     if kind == "club":
         if not row["active"] or not row["recruiting"] or row["id"] in student["_memberships"]:

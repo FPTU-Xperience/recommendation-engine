@@ -111,7 +111,7 @@ def candidate(row, kind):
     common = {"id", "version", "campusCode", "interestIds", "majorCodes", "pillarWeights", "scheduleAvailability"}
     allowed = common | ({"active", "recruiting", "meetingIntervals"} if kind == "club" else
                         {"clubId", "published", "cancelled", "registrationOpen", "registrationDeadline",
-                         "capacityAvailable", "eligibleUserIds", "sessions"})
+                         "capacityAvailable", "eligibleUserIds", "sessions", "isInternal"})
     object_value(row, kind, allowed)
     positive_int(row.get("id"), kind + ".id")
     text(row.get("version"), kind + ".version")
@@ -133,6 +133,7 @@ def candidate(row, kind):
         result["_intervals"] = intervals(row.get("meetingIntervals"), "meetingIntervals")
     else:
         positive_int(row.get("clubId"), "activity.clubId")
+        result["isInternal"] = boolean(row.get("isInternal", False), "isInternal")
         for flag in ("published", "cancelled", "registrationOpen", "capacityAvailable"):
             boolean(row.get(flag), flag)
         result["_eligible"] = ids(row.get("eligibleUserIds"), "eligibleUserIds")

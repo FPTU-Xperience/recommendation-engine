@@ -116,6 +116,22 @@ class EngineTests(unittest.TestCase):
                 data["clubs"][0].update(mutation)
                 self.assertEqual(result(data)["clubs"], [])
 
+    def test_internal_activities_require_membership_and_allow_member_club_across_campus(self):
+        activity = self.data["activities"][0]
+        activity["isInternal"] = True
+        self.assertEqual(result(self.data)["activities"], [])
+        self.student["memberships"] = [activity["clubId"]]
+        self.assertEqual(len(result(self.data)["activities"]), 1)
+        activity["campusCode"] = "HCM"
+        self.assertEqual(len(result(self.data)["activities"]), 1)
+        activity["isInternal"] = False
+        self.assertEqual(result(self.data)["activities"], [])
+
+    def test_internal_flag_requires_a_real_boolean(self):
+        self.data["activities"][0]["isInternal"] = "false"
+        with self.assertRaises(ValidationError):
+            recommend(self.data)
+
     def test_weak_strong_and_four_middle_axes(self):
         self.data["activities"] = [clone_activity(self.data, i + 100, p, i + 10) for i, p in enumerate(PILLARS)]
         rows = result(self.data)["activities"]
