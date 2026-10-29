@@ -12,7 +12,9 @@ permissions:
 
 jobs:
   service:
-    runs-on: ubuntu-latest
+    # Keep real Mongo acceptance tests on the compatible 6.8 kernel family.
+    # MongoDB 8.0 rejects the newer ubuntu-latest kernel (SERVER-121912).
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     services:
       mongo:
