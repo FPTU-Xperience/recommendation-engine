@@ -20,13 +20,13 @@ ClubHub SQL services remain the source of truth. AdminService's background expor
 - Reads check expiry explicitly. TTL removes inactive documents after 30 days; TTL is not the freshness mechanism. Rcm does not serve stale rankings as fresh. Public .NET GETs batch-check live eligibility/capacity/deadlines and candidate versions; invalid items are removed and trigger invalidation.
 - Existing source APIs are not a distributed SQL snapshot. Version checks, invalidation and reconciliation give eventual consistency. Current account/eligibility checks remain authoritative at delivery and registration.
 
-## Data currently unavailable
+## Recommendation inputs
 
-V1 is reranking, not ML training. Impression/click/dismiss feedback ingestion and scheduled model training are not implemented by this release.
+ClubHub records click and qualified view events in AdminService. The feed sends bounded per-user `tagAffinities` and per-candidate `tagIds`. The engine uses them as a ranking signal. Admin capture settings are versioned, and the engine receives neither raw events nor custom tag labels.
 
-Interest and major labels require controlled mappings. Set `Recommendation:InterestMappings:<label>` and `Recommendation:MajorMappings:<label>`; canonical interest IDs pass through. Unmapped labels remain unknown. Activity tags/majors can be supplied through `Recommendation:Activities:<id>:Interests|MajorCodes`; pillar weights come from approved activity data. Wallet signals remain unavailable.
+Canonical onboarding interests and the matching Vietnamese labels map to interest IDs. Deployments can extend interest and major mappings through `Recommendation:InterestMappings:<label>` and `Recommendation:MajorMappings:<label>`. Activity interests and majors can be supplied through `Recommendation:Activities:<id>:Interests|MajorCodes`. The entity's discovery tags flow from the owning service. Wallet signals remain unavailable.
 
-Club matching uses the live ClubService recruitment flag and requires explicit `Recommendation:Clubs:<clubCode>:PillarWeights`, optional `Interests` and `MajorCodes`. Clubs without validated metadata are excluded rather than assigned fabricated scores. Meeting times remain unknown. Published activity sessions currently have no optional/required flag: all are treated as required conservatively. Legacy activities without published sessions are excluded. Both timetable blocks with exact calendar versions are required to claim known schedule availability; missing/stale blocks remain unknown. Slot times match the student UI and are converted from UTC+7 to UTC.
+Club matching uses the live ClubService recruitment flag, discovery tags, optional `Recommendation:Clubs:<clubCode>:PillarWeights`, `Interests`, and `MajorCodes`. A candidate without a pillar profile requires a positive supported match. Club meeting times remain unknown. Published activity sessions are treated as required. Candidates must have published sessions, including campus-organized activities. Both timetable blocks with exact calendar versions are required to claim known schedule availability. Slot times match the student UI and are converted from UTC+7 to UTC.
 
 ## Provisioning on the API host
 

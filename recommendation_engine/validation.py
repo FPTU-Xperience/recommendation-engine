@@ -2,10 +2,12 @@
 
 from datetime import datetime, timedelta, timezone
 import math
+import re
 
 PILLARS = ("Academic", "Research", "Global", "CultureSports", "Community", "Entrepreneurship")
 INTERESTS = {"technology", "design", "business", "arts", "sports", "community", "languages", "leadership"}
 CAMPUSES = {"HAN", "HCM", "DAN", "CAN", "QNH"}
+TAG_ID = re.compile(r"(?:experience:[A-Za-z]+|activity-category:[a-z]+|(?:club-category|custom):[0-9a-f]{64})")
 
 
 class ValidationError(ValueError):
@@ -67,6 +69,11 @@ def tags(value, name, canonical=False):
     return set(values)
 
 
+def discovery_tag_id(value):
+    require(isinstance(value, str) and TAG_ID.fullmatch(value), "Invalid discovery tag ID.")
+    return value
+
+
 def timestamp(value, name):
     try:
         parsed = datetime.fromisoformat(text(value, name).replace("Z", "+00:00"))
@@ -108,7 +115,7 @@ def source_metadata(metadata, as_of, max_age, name):
 
 
 def candidate(row, kind):
-    common = {"id", "version", "campusCode", "interestIds", "majorCodes", "pillarWeights", "scheduleAvailability"}
+    common = {"id", "version", "campusCode", "interestIds", "tagIds", "majorCodes", "pillarWeights", "scheduleAvailability"}
     allowed = common | ({"active", "recruiting", "meetingIntervals"} if kind == "club" else
                         {"clubId", "published", "cancelled", "registrationOpen", "registrationDeadline",
                          "capacityAvailable", "eligibleUserIds", "sessions", "isInternal"})
@@ -116,24 +123,32 @@ def candidate(row, kind):
     positive_int(row.get("id"), kind + ".id")
     text(row.get("version"), kind + ".version")
     require(isinstance(row.get("campusCode"), str) and row["campusCode"] in CAMPUSES, "Unknown candidate campus.")
-    tags(row.get("interestIds"), "interestIds", True)
+    interests = tags(row.get("interestIds"), "interestIds", True)
+    discovery_tags = [discovery_tag_id(tag) for tag in array(row.get("tagIds", []), "tagIds", 18)]
+    require(len(set(discovery_tags)) == len(discovery_tags), "Duplicate discovery tag IDs.")
     tags(row.get("majorCodes"), "majorCodes")
     vector = object_value(row.get("pillarWeights"), "pillarWeights", set(PILLARS))
-    require(bool(vector), "A candidate requires a pillar vector.")
+    require(vector or discovery_tags or (kind == "club" and interests), "A candidate requires pillar weights or tags.")
     for v in vector.values():
         number(v, "pillarWeights", 0, 1)
-    require(math.isclose(sum(vector.values()), 1, abs_tol=1e-6), "Pillar weights must sum to one.")
+    total = math.fsum(vector.values())
+    if vector:
+        require(math.isclose(total, 1, abs_tol=1e-6), "Pillar weights must sum to one.")
     availability(row.get("scheduleAvailability"))
     result = dict(row)
-    total = math.fsum(vector.values())
+    result["_tags"] = set(discovery_tags)
     result["pillarWeights"] = {p: weight / total for p, weight in vector.items()}
     if kind == "club":
         boolean(row.get("active"), "active")
         boolean(row.get("recruiting"), "recruiting")
         result["_intervals"] = intervals(row.get("meetingIntervals"), "meetingIntervals")
     else:
-        positive_int(row.get("clubId"), "activity.clubId")
         result["isInternal"] = boolean(row.get("isInternal", False), "isInternal")
+        require("clubId" in row, "activity.clubId is required.")
+        if row["clubId"] is None:
+            require(not result["isInternal"], "Campus activities must be campus-public.")
+        else:
+            positive_int(row["clubId"], "activity.clubId")
         for flag in ("published", "cancelled", "registrationOpen", "capacityAvailable"):
             boolean(row.get(flag), flag)
         result["_eligible"] = ids(row.get("eligibleUserIds"), "eligibleUserIds")

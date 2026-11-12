@@ -34,7 +34,7 @@ All existing user/club/activity IDs remain positive integers. BE exports active/
 
 `pillars` contains exactly six official core axes `{pillar,score}` with score finite 0..100: Academic, Research, Global, CultureSports, Community, Entrepreneurship. BE supplies already normalized, unrounded scores under one official semester/policy and verified ledger revision. Do not compare raw point columns with different tau, re-normalize rounded UI values, or confuse spendable credits with radar axes. RealWorldWork is separate and excluded from v1 six-axis balancing.
 
-Candidate `pillarWeights` is a nonempty map of core pillars to nonnegative finite weights summing to 1 within 1e-6; use approved activity metadata. For clubs, BE provides an explicitly curated profile; do not assign a club's entire catalog to its single label. Tagless candidates may remain but their missing feature must be explicit; malformed/non-normalized vectors are rejected, never silently guessed.
+Activity `pillarWeights` uses approved activity metadata. Supplied pillar profiles map core pillars to nonnegative finite weights summing to 1 within 1e-6. Candidates with `tagIds` and clubs with canonical `interestIds` may send `pillarWeights: {}`. A candidate without a pillar profile requires a matching tag or, for a club, a matching canonical interest. Its pillar feature is unavailable and `targetPillar` is null. Public campus-organized activities use `clubId: null`.
 
 MajorCode is a controlled mapping of the student's declared major and candidate metadata, not verified roster identity. Unknown/unmapped major is null, never a guessed value from email. Custom interests are retained for future matching but v1 only scores stable canonical interest IDs. A student with only custom interests has unknown canonical-interest match, not a proven mismatch.
 
@@ -56,7 +56,7 @@ Club recurring schedule conflict is a soft compatibility score, not automatic ex
 
 ## 4. Deterministic scoring
 
-These coefficients are initial engineering defaults, not empirically validated model weights. Audience filtering is versioned under `ruleVersion:SIMPLE_CONTENT_V2`; changing weights creates a new configVersion.
+These coefficients are initial engineering defaults. `ruleVersion:SIMPLE_CONTENT_V3` adds optional candidate `tagIds` (up to 18) and per-student `tagAffinities` (up to 100 tag IDs mapped to values in [0, 1]). Nonempty affinities require versioned `sourceVersions.engagement` metadata. When both sides have tag data, the strongest matching affinity receives a nominal weight of 0.20 and existing weights are multiplied by 0.80 before renormalization. A measured mismatch contributes zero. A positive match adds `TAG_INTEREST_MATCH` with the matched IDs. Old snapshots omit these fields and use the prior scoring weights.
 
 | Component | Weight | Normalized feature |
 | --- | --- | --- |

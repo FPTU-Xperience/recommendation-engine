@@ -7,10 +7,11 @@ import math
 
 from .config import Config
 from .validation import (CAMPUSES, PILLARS, ValidationError, array, availability,
-                         boolean, candidate, ids, intervals, number, object_value,
+                         boolean, candidate, discovery_tag_id, ids, intervals, number, object_value,
                          positive_int, require, source_metadata, tags, text, timestamp)
 
-RULE_VERSION = "SIMPLE_CONTENT_V2"
+RULE_VERSION = "SIMPLE_CONTENT_V3"
+TAG_AFFINITY_WEIGHT = 0.20
 
 
 def overlaps(left, right):
@@ -30,11 +31,11 @@ def _config(config):
 
 def _student(raw, snapshot, config):
     object_value(raw, "student", {"userId", "campusCode", "preferences", "schedule", "experience",
-                                  "memberships", "activityRegistrations", "walletSignals", "sourceVersions"})
+                                  "memberships", "activityRegistrations", "walletSignals", "tagAffinities", "sourceVersions"})
     positive_int(raw.get("userId"), "userId")
     require(isinstance(raw.get("campusCode"), str) and raw["campusCode"] in CAMPUSES, "Unknown student campus.")
     versions = object_value(raw.get("sourceVersions"), "sourceVersions",
-                            {"account", "catalog", "preferences", "schedule", "experience", "wallet"})
+                            {"account", "catalog", "preferences", "schedule", "experience", "wallet", "engagement"})
     as_of = timestamp(snapshot["asOf"], "asOf")
     for key, metadata in versions.items():
         source_metadata(metadata, as_of, config.max_source_age_hours, key)
@@ -52,6 +53,12 @@ def _student(raw, snapshot, config):
               "_strong": set(), "_wallets": {}}
     result["_memberships"] = ids(raw.get("memberships"), "memberships")
     result["_registrations"] = ids(raw.get("activityRegistrations"), "activityRegistrations")
+    affinity = object_value(raw.get("tagAffinities", {}), "tagAffinities")
+    require(len(affinity) <= 100, "Too many discovery tag affinities.")
+    if affinity:
+        source_metadata(versions.get("engagement"), as_of, config.max_source_age_hours, "engagement")
+    result["_tag_affinities"] = {discovery_tag_id(key): number(value, "tagAffinity", 0, 1)
+                                 for key, value in affinity.items()}
 
     preferences = raw.get("preferences")
     if preferences is None:
@@ -181,24 +188,36 @@ def _score(student, row, kind, config, as_of):
     own_interests = student["_interests"]
     major = student["_major"]
     targets = student["_targets"]
+    weights = row["pillarWeights"]
+    affinity = student["_tag_affinities"]
+    matching_tags = sorted(tag for tag in row["_tags"] if affinity.get(tag, 0) > 0)
+    if not weights and not matching_tags and not (kind == "club" and interests & own_interests):
+        return None
     values = {
         "interest": len(interests & own_interests) / len(interests | own_interests) if interests and own_interests else None,
         "major": float(major in row["majorCodes"]) if major and row["majorCodes"] else None,
-        "pillar": math.fsum(weight * targets[p] for p, weight in row["pillarWeights"].items()) if targets else None,
+        "pillar": math.fsum(weight * targets[p] for p, weight in weights.items()) if targets and weights else None,
         "schedule": schedule_fit,
         "walletAffinity": student["_wallets"].get(club_id),
     }
-    available = math.fsum(config.weights[name] for name, value in values.items() if value is not None)
-    score = math.fsum(config.weights[name] * value for name, value in values.items() if value is not None) / available if available else None
+    feature_weights = config.weights
+    if affinity and row["_tags"]:
+        values["tagAffinity"] = max((affinity[tag] for tag in matching_tags), default=0)
+        feature_weights = {name: weight * (1 - TAG_AFFINITY_WEIGHT) for name, weight in config.weights.items()}
+        feature_weights["tagAffinity"] = TAG_AFFINITY_WEIGHT
+    available = math.fsum(feature_weights[name] for name, value in values.items() if value is not None)
+    score = math.fsum(feature_weights[name] * value for name, value in values.items() if value is not None) / available if available else None
     # Only suppress tiny floating-point excursions; never round values used for ordering.
     score = min(1.0, max(0.0, score)) if score is not None else None
-    dominant = min(row["pillarWeights"], key=lambda p: (-row["pillarWeights"][p], PILLARS.index(p)))
+    dominant = min(weights, key=lambda p: (-weights[p], PILLARS.index(p)), default=None)
     reasons = []
     if values["interest"]:
         reasons.append({"code": "INTEREST_MATCH", "interestIds": sorted(interests & own_interests)})
+    if matching_tags:
+        reasons.append({"code": "TAG_INTEREST_MATCH", "tagIds": matching_tags})
     if values["major"]:
         reasons.append({"code": "MAJOR_MATCH", "majorCode": major})
-    if targets:
+    if targets and dominant is not None:
         direction = "GROW_WEAKEST_PILLAR" if dominant in student["_weak"] else (
             "DEVELOP_STRONGEST_PILLAR" if dominant in student["_strong"] else "BALANCED_EXPLORATION")
         reasons.append({"code": direction, "pillar": dominant})
@@ -225,10 +244,14 @@ def _rank(student, candidates, kind, config, as_of):
     limit = config.club_limit if kind == "club" else config.activity_limit
     pillars, clubs, selected = Counter(), Counter(), []
     for item in items:
-        if pillars[item["targetPillar"]] >= math.ceil(limit / 2) or (kind == "activity" and clubs[item["_club"]] >= 2):
+        pillar = item["targetPillar"]
+        club = item["_club"]
+        if (pillar is not None and pillars[pillar] >= math.ceil(limit / 2)) or (kind == "activity" and club is not None and clubs[club] >= 2):
             continue
-        pillars[item["targetPillar"]] += 1
-        clubs[item["_club"]] += 1
+        if pillar is not None:
+            pillars[pillar] += 1
+        if club is not None:
+            clubs[club] += 1
         selected.append({k: v for k, v in item.items() if not k.startswith("_")})
         selected[-1]["rank"] = len(selected)
         if len(selected) == limit:

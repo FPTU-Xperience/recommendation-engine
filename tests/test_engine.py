@@ -48,6 +48,56 @@ class EngineTests(unittest.TestCase):
         config = json.loads((ROOT / "config/default.json").read_text(encoding="utf-8"))
         self.assertEqual(recommend(self.data, config), recommend(self.data))
 
+    def test_clubs_with_tags_can_rank_without_a_pillar_profile(self):
+        club = self.data["clubs"][0]
+        club.update(pillarWeights={}, interestIds=["technology"], majorCodes=[], scheduleAvailability="UNKNOWN")
+        self.student["preferences"]["interestIds"] = ["technology"]
+        other = {**club, "id": club["id"] + 1, "interestIds": ["sports"]}
+        self.data["clubs"] = [other, club]
+
+        matched, = result(self.data)["clubs"]
+        self.assertEqual(matched["id"], club["id"])
+        self.assertIn({"code": "INTEREST_MATCH", "interestIds": ["technology"]}, matched["reasons"])
+        self.assertEqual(matched["features"]["pillar"], {"value": None, "available": False})
+        self.assertIsNone(matched["targetPillar"])
+        self.assertEqual(matched["score"], 1)
+
+    def test_empty_pillar_profile_requires_tags(self):
+        self.data["clubs"][0].update(pillarWeights={}, interestIds=[])
+        with self.assertRaises(ValidationError):
+            recommend(self.data)
+        self.data["clubs"][0]["interestIds"] = ["technology"]
+        self.data["activities"][0]["pillarWeights"] = {}
+        with self.assertRaises(ValidationError):
+            recommend(self.data)
+
+    def test_engagement_reranks_eligible_activities_and_matches_custom_tags(self):
+        shared_tag = "custom:" + "a" * 64
+        self.student["tagAffinities"] = {shared_tag: 0.5}
+        self.student["sourceVersions"]["engagement"] = {"version": "one-click", "asOf": self.data["asOf"]}
+        activity = self.data["activities"][0]
+        activity.update(tagIds=["activity-category:talk"], pillarWeights={"Research": 1})
+        matched = {**activity, "id": activity["id"] + 1, "tagIds": [shared_tag, "experience:RealWorldWork"]}
+        self.data["activities"] = [activity, matched]
+        rows = result(self.data)["activities"]
+        self.assertEqual([row["id"] for row in rows], [matched["id"], activity["id"]])
+        self.assertEqual(rows[0]["features"]["tagAffinity"]["value"], 0.5)
+        self.assertIn({"code": "TAG_INTEREST_MATCH", "tagIds": [shared_tag]}, rows[0]["reasons"])
+        matched["pillarWeights"] = {}
+        self.assertIsNone(result(self.data)["activities"][0]["targetPillar"])
+        matched["eligibleUserIds"] = []
+        self.assertEqual([row["id"] for row in result(self.data)["activities"]], [activity["id"]])
+
+    def test_campus_activity_keeps_campus_and_registration_checks(self):
+        activity = self.data["activities"][0]
+        activity.update(clubId=None, isInternal=False)
+        self.assertEqual(len(result(self.data)["activities"]), 1)
+        activity["campusCode"] = "HCM"
+        self.assertEqual(result(self.data)["activities"], [])
+        activity.update(campusCode=self.student["campusCode"], isInternal=True)
+        with self.assertRaises(ValidationError):
+            recommend(self.data)
+
     def test_unknown_schedule_is_not_free(self):
         self.student["schedule"]["availability"] = "UNKNOWN"
         row = result(self.data)["activities"][0]
